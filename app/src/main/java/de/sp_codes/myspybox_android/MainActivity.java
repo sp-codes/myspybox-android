@@ -47,6 +47,19 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        test();
+    }
+
+    private void test() {
+        final PackageManager pm = getPackageManager();
+//get a list of installed apps.
+        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+
+        for (ApplicationInfo packageInfo : packages) {
+            Log.d(TAG, "Package :" + packageInfo.packageName);
+            Log.d(TAG, "Label : " + packageInfo.loadLabel(pm));
+        }
+// the getLaunchIntentForPackage returns an intent that you can use with startActivity()
     }
 
     @Override
