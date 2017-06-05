@@ -1,27 +1,36 @@
-package de.sp_codes.myspybox_android;
+package de.sp_codes.myspybox_android.app;
 
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.util.Log;
-import android.view.View;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+import de.sp_codes.myspybox_android.R;
+import de.sp_codes.myspybox_android.app.base.BaseActivity;
+import de.sp_codes.myspybox_android.app.setup.SetupActivity;
+import de.sp_codes.myspybox_android.service.MainServicesStarter;
 
+public class MainActivity extends BaseActivity
+        implements NavigationView.OnNavigationItemSelectedListener {
     private static final String TAG = "MainActivity";
+
+    private static final String ACTIVITY_STARTED = "activity-startup-started";
+
+    private static final int ACTIVITY_STARTUP = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,20 +55,38 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        ((TextView) navigationView.getHeaderView(0).findViewById(R.id.user_id)).setText(getSharedPreferences(PREFERENCES, MODE_PRIVATE).getString(PreferenceKeys.USER_ID, null));
+        ((TextView) navigationView.getHeaderView(0).findViewById(R.id.server_url)).setText(getSharedPreferences(PREFERENCES, MODE_PRIVATE).getString(PreferenceKeys.SERVER_URL, null));
         navigationView.setNavigationItemSelectedListener(this);
-        test();
+
+        if (!getSharedPreferences(PREFERENCES, MODE_PRIVATE).getBoolean(PreferenceKeys.IS_SETUP_COMPLETE, PreferenceDefaults.IS_SETUP_COMPLETE)) {
+            if (savedInstanceState == null || !savedInstanceState.getBoolean(ACTIVITY_STARTED, false)) {
+                Intent intent = new Intent(this, SetupActivity.class);
+                startActivityForResult(intent, ACTIVITY_STARTUP);
+            }
+        }
+
+        sendBroadcast(new Intent(this, MainServicesStarter.class));
+
+//        test();
     }
 
-    private void test() {
-        final PackageManager pm = getPackageManager();
-//get a list of installed apps.
-        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean(ACTIVITY_STARTED, true);
+        super.onSaveInstanceState(outState);
+    }
 
-        for (ApplicationInfo packageInfo : packages) {
-            Log.d(TAG, "Package :" + packageInfo.packageName);
-            Log.d(TAG, "Label : " + packageInfo.loadLabel(pm));
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case ACTIVITY_STARTUP:
+                if (resultCode != RESULT_OK || !getSharedPreferences(PREFERENCES, MODE_PRIVATE).getBoolean(PreferenceKeys.IS_SETUP_COMPLETE, PreferenceDefaults.IS_SETUP_COMPLETE)) {
+                    finish();
+                }
+                break;
         }
-// the getLaunchIntentForPackage returns an intent that you can use with startActivity()
     }
 
     @Override
